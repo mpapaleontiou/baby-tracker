@@ -66,22 +66,21 @@ function renderLog() {
       const li = document.createElement("li");
       const deleteBtn = document.createElement("button");
       
-      // ✅ Change this line
-      li.innerHTML = `${data.type} at ${data.timestamp}`;
+      // Create a span for the text content to allow the button to be on the same line
+      const textSpan = document.createElement("span");
+      textSpan.textContent = `${data.type} at ${data.timestamp}`;
 
-      deleteBtn.textContent = "🗑️ Delete";
-      deleteBtn.style.marginLeft = "10px";
-      deleteBtn.style.background = "#ffad99";
-      deleteBtn.style.border = "none";
-      deleteBtn.style.cursor = "pointer";
+      // Update the button's content and style
+      deleteBtn.innerHTML = `&times;`; // Use a simple 'x' character for a minimal look
+      deleteBtn.className = "delete-btn"; // Add a class for CSS styling
 
       deleteBtn.addEventListener('click', () => {
         deleteActivity(doc.id);
       });
       
-      // ✅ Append the button to the list item
+      // Append the text and the button to the list item
+      li.appendChild(textSpan);
       li.appendChild(deleteBtn);
-      // ✅ Append the list item to the log
       log.appendChild(li);
     });
   }, (error) => {
