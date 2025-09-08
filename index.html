@@ -36,6 +36,24 @@
         margin: 5px 0;
         border-radius: 6px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        /* ✅ Add these lines for a better layout */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      /* ✅ Add new styles for the delete button */
+      .delete-btn {
+        background: transparent;
+        color: #c0c0c0;
+        font-size: 20px;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        transition: color 0.2s ease-in-out;
+      }
+      .delete-btn:hover {
+        color: #ff0000;
       }
     </style>
 </head>
