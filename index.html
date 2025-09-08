@@ -49,33 +49,54 @@
 
   <ul id="activityLog"></ul>
 
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+
   <script>
+    // 🔑 Replace this config with the one from your Firebase console
+const firebaseConfig = {
+  apiKey: "AIzaSyBq21B...",
+  authDomain: "baby-tracker-f0454.firebaseapp.com",
+  projectId: "baby-tracker-f0454",
+  storageBucket: "baby-tracker-f0454.appspot.com",
+  messagingSenderId: "669338540494",
+  appId: "1:669338540494:web:cb35ece4659dafc205f39f",
+  measurementId: "G-YE7K6EYXRS"
+};
+
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     const log = document.getElementById('activityLog');
 
-    function logActivity(type) {
+    async function logActivity(type) {
       const now = new Date();
       const timestamp = now.toLocaleString();
-      const entry = { type, timestamp };
 
-      // Save to localStorage
-      let activities = JSON.parse(localStorage.getItem('activities')) || [];
-      activities.unshift(entry);
-      localStorage.setItem('activities', JSON.stringify(activities));
-
-      renderLog();
-    }
-
-    function renderLog() {
-      const activities = JSON.parse(localStorage.getItem('activities')) || [];
-      log.innerHTML = '';
-      activities.forEach(activity => {
-        const li = document.createElement('li');
-        li.textContent = `${activity.type} at ${activity.timestamp}`;
-        log.appendChild(li);
+      await db.collection("activities").add({
+        type,
+        timestamp,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
     }
 
-    // Load saved logs on page load
+    function renderLog() {
+      db.collection("activities")
+        .orderBy("createdAt", "desc")
+        .onSnapshot(snapshot => {
+          log.innerHTML = "";
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const li = document.createElement("li");
+            li.textContent = `${data.type} at ${data.timestamp}`;
+            log.appendChild(li);
+          });
+        });
+    }
+
     renderLog();
   </script>
 </body>
