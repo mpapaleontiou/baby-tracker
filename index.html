@@ -14,13 +14,23 @@
       h1 {
         text-align: center;
       }
+      /* ✅ Update button styles for larger size */
       button {
         margin: 5px;
-        padding: 10px 15px;
-        font-size: 16px;
-        border-radius: 8px;
+        padding: 15px 25px; /* Increased padding */
+        font-size: 24px; /* Increased font size for text and emojis */
+        border-radius: 12px;
         border: none;
         cursor: pointer;
+        width: calc(50% - 10px); /* Adjust button width for a 2x2 grid */
+      }
+      /* ✅ Add new styles for the container */
+      .button-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
       }
       .eat { background: #ffcc80; }
       .sleep { background: #90caf9; }
@@ -89,7 +99,7 @@
 </head>
 <body>
     <h1>Baby Activity Tracker</h1>
-    <div>
+    <div class="button-container">
         <button class="eat" id="eat-btn">🍼 Eat</button>
         <button class="sleep" id="sleep-btn">😴 Sleep</button>
         <button class="wake" id="wake-btn">🌞 Wake Up</button>
