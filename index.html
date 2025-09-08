@@ -14,23 +14,18 @@
       h1 {
         text-align: center;
       }
-      /* ✅ Update button styles for larger size */
+      .button-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
       button {
-        margin: 5px;
-        padding: 15px 25px; /* Increased padding */
-        font-size: 24px; /* Increased font size for text and emojis */
+        padding: 20px;
+        font-size: 24px;
         border-radius: 12px;
         border: none;
         cursor: pointer;
-        width: calc(50% - 10px); /* Adjust button width for a 2x2 grid */
-      }
-      /* ✅ Add new styles for the container */
-      .button-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 20px;
       }
       .eat { background: #ffcc80; }
       .sleep { background: #90caf9; }
@@ -51,6 +46,12 @@
         justify-content: space-between;
         align-items: center;
       }
+      li span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 10px;
+      }
       .delete-btn {
         background: transparent !important;
         color: #c0c0c0 !important;
@@ -60,6 +61,7 @@
         padding: 0 !important;
         line-height: 1 !important;
         transition: color 0.2s ease-in-out;
+        flex-shrink: 0;
       }
       .delete-btn:hover {
         color: #ff0000 !important;
