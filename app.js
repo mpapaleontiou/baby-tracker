@@ -1,9 +1,7 @@
 // app.js
 
-// Import the Firebase app instance from the config file
 import { app } from "./firebase-config.js";
 
-// Import the necessary Firestore functions from the modular SDK
 import {
   getFirestore,
   collection,
@@ -11,31 +9,28 @@ import {
   query,
   orderBy,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  doc, // Import doc
+  deleteDoc // Import deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
-// Get a reference to the Firestore service
 const db = getFirestore(app);
 
-// Get a reference to the log element
 const log = document.getElementById('activityLog');
 
-// Get references to the buttons using their new IDs
 const eatBtn = document.getElementById('eat-btn');
 const sleepBtn = document.getElementById('sleep-btn');
 const wakeBtn = document.getElementById('wake-btn');
 
-// Function to log an activity to Firestore
 async function logActivity(type) {
   const now = new Date();
   const timestamp = now.toLocaleString();
 
   try {
-    // Use addDoc and collection for the modular syntax
     await addDoc(collection(db, "activities"), {
       type,
       timestamp,
-      createdAt: serverTimestamp() // Use serverTimestamp()
+      createdAt: serverTimestamp()
     });
     console.log("Activity logged successfully!");
   } catch (e) {
@@ -43,16 +38,24 @@ async function logActivity(type) {
   }
 }
 
-// Function to render the log in the UI
+// ✅ New function to delete an activity
+async function deleteActivity(docId) {
+  try {
+    await deleteDoc(doc(db, "activities", docId));
+    console.log("Activity deleted successfully!");
+  } catch (e) {
+    console.error("Error deleting document: ", e);
+  }
+}
+
 function renderLog() {
   const activitiesQuery = query(
     collection(db, "activities"),
     orderBy("createdAt", "desc")
   );
 
-  // Use onSnapshot to listen for real-time updates
   onSnapshot(activitiesQuery, (snapshot) => {
-    log.innerHTML = ""; // Clear existing list
+    log.innerHTML = "";
 
     if (snapshot.empty) {
       log.innerHTML = "<li>No activities logged yet.</li>";
@@ -62,8 +65,22 @@ function renderLog() {
     snapshot.forEach((doc) => {
       const data = doc.data();
       const li = document.createElement("li");
-      const activityText = `${data.type} at ${data.timestamp}`;
-      li.textContent = activityText;
+      const deleteBtn = document.createElement("button"); // ✅ Create a delete button
+      
+      li.textContent = `${data.type} at ${data.timestamp}`;
+
+      deleteBtn.textContent = "🗑️ Delete";
+      deleteBtn.style.marginLeft = "10px";
+      deleteBtn.style.background = "#ffad99";
+      deleteBtn.style.border = "none";
+      deleteBtn.style.cursor = "pointer";
+
+      // ✅ Add a click event listener to the delete button
+      deleteBtn.addEventListener('click', () => {
+        deleteActivity(doc.id); // Pass the document ID to the delete function
+      });
+      
+      li.appendChild(deleteBtn);
       log.appendChild(li);
     });
   }, (error) => {
@@ -72,10 +89,8 @@ function renderLog() {
   });
 }
 
-// Add event listeners to the buttons
 eatBtn.addEventListener('click', () => logActivity('Eat'));
 sleepBtn.addEventListener('click', () => logActivity('Sleep'));
 wakeBtn.addEventListener('click', () => logActivity('Wake Up'));
 
-// Initial call to render the log
 renderLog();
