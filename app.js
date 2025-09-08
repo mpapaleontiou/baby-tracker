@@ -14,7 +14,6 @@ import {
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
-// ✅ Wrap all your code in a DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', (event) => {
     const db = getFirestore(app);
 
@@ -28,6 +27,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const manualEntryModal = document.getElementById('manualEntryModal');
     const manualEntryForm = document.getElementById('manualEntryForm');
     const closeModalBtn = document.getElementById('closeModalBtn');
+
+    // ✅ Define a map for icons
+    const activityIcons = {
+        'Eat': '🍼',
+        'Sleep': '😴',
+        'Wake Up': '🌞'
+    };
 
     async function logActivity(type, manualTimestamp = null) {
       const now = new Date();
@@ -94,7 +100,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
           const deleteBtn = document.createElement("button");
           const textSpan = document.createElement("span");
           
-          textSpan.textContent = `${data.type} at ${data.timestamp}`;
+          // ✅ Get the icon for the activity type
+          const icon = activityIcons[data.type] || ''; // Fallback for unknown types
+          
+          // ✅ Update textContent to include icon and bold the activity type
+          textSpan.innerHTML = `${icon} <strong>${data.type}</strong> at ${data.timestamp}`;
           
           deleteBtn.innerHTML = `&times;`;
           deleteBtn.className = "delete-btn";
@@ -113,7 +123,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
       });
     }
 
-    // Event listeners
     manualEntryBtn.addEventListener('click', () => {
       manualEntryModal.style.display = 'flex';
     });
