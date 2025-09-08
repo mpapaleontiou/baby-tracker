@@ -25,6 +25,7 @@
       .eat { background: #ffcc80; }
       .sleep { background: #90caf9; }
       .wake { background: #a5d6a7; }
+      .manual-entry { background: #b2ebf2; }
       ul {
         list-style: none;
         padding: 0;
@@ -41,7 +42,6 @@
         align-items: center;
       }
       .delete-btn {
-        /* ✅ Add !important to override general button styles */
         background: transparent !important;
         color: #c0c0c0 !important;
         font-size: 20px !important;
@@ -54,10 +54,37 @@
       .delete-btn:hover {
         color: #ff0000 !important;
       }
-        h3 {
-  margin-top: 30px;
-  color: #555;
-}
+      h3 {
+        margin-top: 30px;
+        color: #555;
+      }
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        display: none;
+        justify-content: center;
+        align-items: center;
+      }
+      .modal-content {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+      }
+      .modal-content input, .modal-content select, .modal-content button {
+        width: 100%;
+        padding: 8px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        box-sizing: border-box;
+      }
     </style>
 </head>
 <body>
@@ -66,9 +93,30 @@
         <button class="eat" id="eat-btn">🍽️ Eat</button>
         <button class="sleep" id="sleep-btn">😴 Sleep</button>
         <button class="wake" id="wake-btn">🌞 Wake Up</button>
+        <button class="manual-entry" id="manual-entry-btn">📋 Manual Entry</button>
     </div>
 
     <ul id="activityLog"></ul>
+
+    <div id="manualEntryModal" class="modal">
+        <div class="modal-content">
+            <h3>Add Manual Entry</h3>
+            <form id="manualEntryForm">
+                <label for="activityType">Activity Type:</label>
+                <select id="activityType" required>
+                    <option value="Eat">Eat</option>
+                    <option value="Sleep">Sleep</option>
+                    <option value="Wake Up">Wake Up</option>
+                </select>
+                <label for="activityDate">Date:</label>
+                <input type="date" id="activityDate" required>
+                <label for="activityTime">Time:</label>
+                <input type="time" id="activityTime" required>
+                <button type="submit">Add Entry</button>
+                <button type="button" id="closeModalBtn">Cancel</button>
+            </form>
+        </div>
+    </div>
 
     <script type="module" src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js"></script>
