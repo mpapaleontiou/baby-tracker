@@ -41,17 +41,18 @@
         align-items: center;
       }
       .delete-btn {
-        background: transparent;
-        color: #c0c0c0;
-        font-size: 20px;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        line-height: 1;
+        /* ✅ Add !important to override general button styles */
+        background: transparent !important;
+        color: #c0c0c0 !important;
+        font-size: 20px !important;
+        border: none !important;
+        cursor: pointer !important;
+        padding: 0 !important;
+        line-height: 1 !important;
         transition: color 0.2s ease-in-out;
       }
       .delete-btn:hover {
-        color: #ff0000;
+        color: #ff0000 !important;
       }
     </style>
 </head>
