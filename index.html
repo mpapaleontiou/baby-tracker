@@ -49,22 +49,21 @@
 
   <ul id="activityLog"></ul>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+  <!-- ✅ Firebase compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 
   <script>
-    // 🔑 Replace this config with the one from your Firebase console
-const firebaseConfig = {
-  apiKey: "AIzaSyBq21B...",
-  authDomain: "baby-tracker-f0454.firebaseapp.com",
-  projectId: "baby-tracker-f0454",
-  storageBucket: "baby-tracker-f0454.appspot.com",
-  messagingSenderId: "669338540494",
-  appId: "1:669338540494:web:cb35ece4659dafc205f39f",
-  measurementId: "G-YE7K6EYXRS"
-};
-
+    // 🔑 Replace with your actual config from Firebase console
+    const firebaseConfig = {
+      apiKey: "AIzaSyBq21B...",
+      authDomain: "baby-tracker-f0454.firebaseapp.com",
+      projectId: "baby-tracker-f0454",
+      storageBucket: "baby-tracker-f0454.appspot.com",
+      messagingSenderId: "669338540494",
+      appId: "1:669338540494:web:cb35ece4659dafc205f39f",
+      measurementId: "G-YE7K6EYXRS"
+    };
 
     // Initialize Firebase
     const app = firebase.initializeApp(firebaseConfig);
