@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Baby Activity Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+    .eat { background: #ffcc80; }
+    .sleep { background: #90caf9; }
+    .wake { background: #a5d6a7; }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+    li {
+      background: #fff;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>Baby Activity Tracker</h1>
+  <div>
+    <button class="eat" onclick="logActivity('Eat')">🍽️ Eat</button>
+    <button class="sleep" onclick="logActivity('Sleep')">😴 Sleep</button>
+    <button class="wake" onclick="logActivity('Wake Up')">🌞 Wake Up</button>
+  </div>
+
+  <ul id="activityLog"></ul>
+
+  <script>
+    const log = document.getElementById('activityLog');
+
+    function logActivity(type) {
+      const now = new Date();
+      const timestamp = now.toLocaleString();
+      const entry = { type, timestamp };
+
+      // Save to localStorage
+      let activities = JSON.parse(localStorage.getItem('activities')) || [];
+      activities.unshift(entry);
+      localStorage.setItem('activities', JSON.stringify(activities));
+
+      renderLog();
+    }
+
+    function renderLog() {
+      const activities = JSON.parse(localStorage.getItem('activities')) || [];
+      log.innerHTML = '';
+      activities.forEach(activity => {
+        const li = document.createElement('li');
+        li.textContent = `${activity.type} at ${activity.timestamp}`;
+        log.appendChild(li);
+      });
+    }
+
+    // Load saved logs on page load
+    renderLog();
+  </script>
+</body>
+</html>
