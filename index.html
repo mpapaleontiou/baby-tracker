@@ -82,19 +82,27 @@
       });
     }
 
-    function renderLog() {
-      db.collection("activities")
-        .orderBy("createdAt", "desc")
-        .onSnapshot(snapshot => {
-          log.innerHTML = "";
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const li = document.createElement("li");
-            li.textContent = `${data.type} at ${data.timestamp}`;
-            log.appendChild(li);
-          });
-        });
-    }
+function renderLog() {
+  db.collection("activities")
+    .orderBy("createdAt", "desc")
+    .onSnapshot(snapshot => {
+      log.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const li = document.createElement("li");
+        li.textContent = `${data.type} at ${data.timestamp}`;
+        log.appendChild(li);
+      });
+
+      if (snapshot.empty) {
+        log.innerHTML = "<li>No activities logged yet.</li>";
+      }
+    }, error => {
+      console.error("Error loading logs:", error);
+      log.innerHTML = "<li>Error loading logs. Check Firestore rules.</li>";
+    });
+}
+
 
     renderLog();
   </script>
