@@ -55,6 +55,7 @@ function renderLog() {
 
   onSnapshot(activitiesQuery, (snapshot) => {
     log.innerHTML = "";
+    let lastDate = null; // Variable to track the last date
 
     if (snapshot.empty) {
       log.innerHTML = "<li>No activities logged yet.</li>";
@@ -63,22 +64,39 @@ function renderLog() {
 
     snapshot.forEach((doc) => {
       const data = doc.data();
+
+      // Check if createdAt exists and is a Firebase Timestamp
+      if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+        const entryDate = data.createdAt.toDate();
+        const formattedDate = entryDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+
+        // If the date changes, add a new heading
+        if (formattedDate !== lastDate) {
+          const dateHeading = document.createElement("h3");
+          dateHeading.textContent = formattedDate;
+          log.appendChild(dateHeading);
+          lastDate = formattedDate;
+        }
+      }
+
       const li = document.createElement("li");
       const deleteBtn = document.createElement("button");
-      
-      // Create a span for the text content to allow the button to be on the same line
       const textSpan = document.createElement("span");
+      
       textSpan.textContent = `${data.type} at ${data.timestamp}`;
-
-      // Update the button's content and style
-      deleteBtn.innerHTML = `&times;`; // Use a simple 'x' character for a minimal look
-      deleteBtn.className = "delete-btn"; // Add a class for CSS styling
+      
+      deleteBtn.innerHTML = `&times;`;
+      deleteBtn.className = "delete-btn";
 
       deleteBtn.addEventListener('click', () => {
         deleteActivity(doc.id);
       });
-      
-      // Append the text and the button to the list item
+      
       li.appendChild(textSpan);
       li.appendChild(deleteBtn);
       log.appendChild(li);
@@ -88,6 +106,7 @@ function renderLog() {
     log.innerHTML = "<li>Error loading logs. Check Firestore rules.</li>";
   });
 }
+
 
 eatBtn.addEventListener('click', () => logActivity('Eat'));
 sleepBtn.addEventListener('click', () => logActivity('Sleep'));
