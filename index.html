@@ -8,25 +8,20 @@
         font-family: Arial, sans-serif;
         max-width: 500px;
         margin: 20px auto;
-        /* ✅ Reduced horizontal padding */
         padding: 20px 10px;
         background: #f9f9f9;
-        /* ✅ Increased base font size */
         font-size: 1.1em;
       }
       h1 {
         text-align: center;
-        /* ✅ Increased heading font size */
         font-size: 2.2em;
       }
-      /* ✅ New grid container for buttons */
       .button-container {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
         margin-bottom: 20px;
       }
-      /* ✅ New styles for buttons to make them larger and square */
       button {
         padding: 20px;
         font-size: 24px;
@@ -52,38 +47,20 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap;
       }
-        li {
-    background: #fff;
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 6px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap; /* Allows the elements to wrap if the screen is too small */
-}
-
-li span:first-of-type {
-    /* Style the first span containing the activity and date */
-    flex-grow: 1;
-    margin-right: 10px;
-}
-
-li .activity-time {
-    /* Style the new time span */
-    flex-shrink: 0; /* Prevents the time from shrinking */
-    margin-left: auto; /* Pushes the element to the right */
-    text-align: right;
-    font-weight: bold; /* Make the time stand out */
-    color: #555;
-}
       li span {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         margin-right: 10px;
+      }
+      li .activity-time {
+        flex-shrink: 0;
+        margin-left: auto;
+        text-align: right;
+        /* ✅ Change: Removed font-weight: bold; */
+        color: #555;
       }
       .delete-btn {
         background: transparent !important;
