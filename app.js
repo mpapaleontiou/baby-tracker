@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const manualEntryForm = document.getElementById('manualEntryForm');
     const closeModalBtn = document.getElementById('closeModalBtn');
 
-    // ✅ Define a map for icons
     const activityIcons = {
         'Eat': '🍼',
         'Sleep': '😴',
@@ -37,7 +36,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     async function logActivity(type, manualTimestamp = null) {
       const now = new Date();
-      const displayTimestamp = manualTimestamp ? new Date(manualTimestamp).toLocaleString() : now.toLocaleString();
+      // ✅ Change: Only store the time, not the full date and time
+      const displayTimestamp = manualTimestamp ? new Date(manualTimestamp).toLocaleTimeString() : now.toLocaleTimeString();
       const createdAt = manualTimestamp ? new Date(manualTimestamp) : serverTimestamp();
 
       try {
@@ -99,17 +99,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
           const li = document.createElement("li");
           const deleteBtn = document.createElement("button");
           
-          // ✅ Split the timestamp from the activity type and get the icon
-          const [datePart, timePart] = data.timestamp.split(', ');
           const icon = activityIcons[data.type] || '';
           
           const mainTextSpan = document.createElement("span");
-          mainTextSpan.innerHTML = `${icon} <strong>${data.type}</strong> at ${datePart}`;
+          // ✅ Change: Remove the date part from the displayed text
+          mainTextSpan.innerHTML = `${icon} <strong>${data.type}</strong>`;
           
-          // ✅ Create a new span for the time and give it a class
           const timeSpan = document.createElement("span");
           timeSpan.className = 'activity-time';
-          timeSpan.textContent = timePart;
+          // ✅ Change: No need to split, just use the timestamp directly
+          timeSpan.textContent = data.timestamp;
           
           deleteBtn.innerHTML = `&times;`;
           deleteBtn.className = "delete-btn";
@@ -119,7 +118,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
           });
           
           li.appendChild(mainTextSpan);
-          li.appendChild(timeSpan); // Append the time span separately
+          li.appendChild(timeSpan);
           li.appendChild(deleteBtn);
           log.appendChild(li);
         });
