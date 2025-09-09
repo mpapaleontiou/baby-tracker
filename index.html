@@ -53,6 +53,32 @@
         justify-content: space-between;
         align-items: center;
       }
+        li {
+    background: #fff;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allows the elements to wrap if the screen is too small */
+}
+
+li span:first-of-type {
+    /* Style the first span containing the activity and date */
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+li .activity-time {
+    /* Style the new time span */
+    flex-shrink: 0; /* Prevents the time from shrinking */
+    margin-left: auto; /* Pushes the element to the right */
+    text-align: right;
+    font-weight: bold; /* Make the time stand out */
+    color: #555;
+}
       li span {
         white-space: nowrap;
         overflow: hidden;
