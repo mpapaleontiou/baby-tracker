@@ -61,72 +61,68 @@ document.addEventListener('DOMContentLoaded', (event) => {
       }
     }
 
-    function renderLog() {
-      const activitiesQuery = query(
+function renderLog() {
+    const activitiesQuery = query(
         collection(db, "activities"),
         orderBy("createdAt", "desc")
-      );
+    );
 
-      onSnapshot(activitiesQuery, (snapshot) => {
+    onSnapshot(activitiesQuery, (snapshot) => {
         log.innerHTML = "";
         let lastDate = null;
 
         if (snapshot.empty) {
-          log.innerHTML = "<li>No activities logged yet.</li>";
-          return;
+            log.innerHTML = "<li>No activities logged yet.</li>";
+            return;
         }
 
         snapshot.forEach((doc) => {
-          const data = doc.data();
+            const data = doc.data();
 
-          if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-            const entryDate = data.createdAt.toDate();
-            const formattedDate = entryDate.toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            });
+            if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+                const entryDate = data.createdAt.toDate();
+                const formattedDate = entryDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
 
-            if (formattedDate !== lastDate) {
-              const dateHeading = document.createElement("h3");
-              dateHeading.textContent = formattedDate;
-              log.appendChild(dateHeading);
-              lastDate = formattedDate;
+                if (formattedDate !== lastDate) {
+                    const dateHeading = document.createElement("h3");
+                    dateHeading.textContent = formattedDate;
+                    log.appendChild(dateHeading);
+                    lastDate = formattedDate;
+                }
             }
-          }
 
-          const li = document.createElement("li");
-          const deleteBtn = document.createElement("button");
-          
-          const icon = activityIcons[data.type] || '';
-          
-          const mainTextSpan = document.createElement("span");
-          // ✅ Change: Remove the date part from the displayed text
-          mainTextSpan.innerHTML = `${icon} <strong>${data.type}</strong>`;
-          
-          const timeSpan = document.createElement("span");
-          timeSpan.className = 'activity-time';
-          // ✅ Change: No need to split, just use the timestamp directly
-          timeSpan.textContent = data.timestamp;
-          
-          deleteBtn.innerHTML = `&times;`;
-          deleteBtn.className = "delete-btn";
+            const li = document.createElement("li");
+            const deleteBtn = document.createElement("button");
+            const textSpan = document.createElement("span");
+            
+            const icon = activityIcons[data.type] || '';
+            
+            // ✅ Change: Only display the time part of the timestamp
+            const timePart = new Date(data.createdAt.toDate()).toLocaleTimeString();
 
-          deleteBtn.addEventListener('click', () => {
-            deleteActivity(doc.id);
-          });
-          
-          li.appendChild(mainTextSpan);
-          li.appendChild(timeSpan);
-          li.appendChild(deleteBtn);
-          log.appendChild(li);
+            textSpan.innerHTML = `${icon} <strong>${data.type}</strong> at ${timePart}`;
+            
+            deleteBtn.innerHTML = `&times;`;
+            deleteBtn.className = "delete-btn";
+
+            deleteBtn.addEventListener('click', () => {
+                deleteActivity(doc.id);
+            });
+            
+            li.appendChild(textSpan);
+            li.appendChild(deleteBtn);
+            log.appendChild(li);
         });
-      }, (error) => {
+    }, (error) => {
         console.error("Error loading logs:", error);
         log.innerHTML = "<li>Error loading logs. Check Firestore rules.</li>";
-      });
-    }
+    });
+}
 
     manualEntryBtn.addEventListener('click', () => {
       manualEntryModal.style.display = 'flex';
