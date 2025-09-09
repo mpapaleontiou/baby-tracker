@@ -48,15 +48,15 @@
         justify-content: space-between;
         align-items: center;
       }
-      /* ✅ New CSS rule for the first span in the list item */
       li > span:first-of-type {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      /* ✅ New CSS rule for the timestamp span */
       li .activity-time {
-        margin-left: auto; /* Pushes the element to the right */
+        margin-left: auto;
+        /* ✅ Add a small margin to the right */
+        margin-right: 10px; 
         text-align: right;
         flex-shrink: 0;
       }
