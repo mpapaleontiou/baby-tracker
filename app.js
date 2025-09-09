@@ -98,13 +98,18 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
           const li = document.createElement("li");
           const deleteBtn = document.createElement("button");
-          const textSpan = document.createElement("span");
           
-          // ✅ Get the icon for the activity type
-          const icon = activityIcons[data.type] || ''; // Fallback for unknown types
+          // ✅ Split the timestamp from the activity type and get the icon
+          const [datePart, timePart] = data.timestamp.split(', ');
+          const icon = activityIcons[data.type] || '';
           
-          // ✅ Update textContent to include icon and bold the activity type
-          textSpan.innerHTML = `${icon} <strong>${data.type}</strong> at ${data.timestamp}`;
+          const mainTextSpan = document.createElement("span");
+          mainTextSpan.innerHTML = `${icon} <strong>${data.type}</strong> at ${datePart}`;
+          
+          // ✅ Create a new span for the time and give it a class
+          const timeSpan = document.createElement("span");
+          timeSpan.className = 'activity-time';
+          timeSpan.textContent = timePart;
           
           deleteBtn.innerHTML = `&times;`;
           deleteBtn.className = "delete-btn";
@@ -113,7 +118,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
             deleteActivity(doc.id);
           });
           
-          li.appendChild(textSpan);
+          li.appendChild(mainTextSpan);
+          li.appendChild(timeSpan); // Append the time span separately
           li.appendChild(deleteBtn);
           log.appendChild(li);
         });
