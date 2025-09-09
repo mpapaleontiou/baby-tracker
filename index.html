@@ -47,20 +47,18 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        flex-wrap: wrap;
       }
-      li span {
+      /* ✅ New CSS rule for the first span in the list item */
+      li > span:first-of-type {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-right: 10px;
       }
+      /* ✅ New CSS rule for the timestamp span */
       li .activity-time {
-        flex-shrink: 0;
-        margin-left: auto;
+        margin-left: auto; /* Pushes the element to the right */
         text-align: right;
-        /* ✅ Change: Removed font-weight: bold; */
-        color: #555;
+        flex-shrink: 0;
       }
       .delete-btn {
         background: transparent !important;
