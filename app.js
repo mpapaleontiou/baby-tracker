@@ -69,19 +69,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateElapsedTime(latestEat, latestWakeUp) {
     const now = new Date();
 
-    if (latestEat) {
-      const minutesElapsed = Math.floor((now - latestEat) / (1000 * 60));
-      lastFeedTimeEl.textContent = `${minutesElapsed} minutes`;
-    } else {
-      lastFeedTimeEl.textContent = "N/A";
+    function formatElapsedTime(date) {
+      if (!date) return "N/A";
+      const totalMinutes = Math.floor((now - date) / (1000 * 60));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      let result = "";
+      if (hours > 0) result += `${hours} hour${hours > 1 ? "s" : ""} `;
+      result += `${minutes} minute${minutes !== 1 ? "s" : ""}`;
+      return result;
     }
 
-    if (latestWakeUp) {
-      const minutesElapsed = Math.floor((now - latestWakeUp) / (1000 * 60));
-      lastWakeUpTimeEl.textContent = `${minutesElapsed} minutes`;
-    } else {
-      lastWakeUpTimeEl.textContent = "N/A";
-    }
+    lastFeedTimeEl.textContent = formatElapsedTime(latestEat);
+    lastWakeUpTimeEl.textContent = formatElapsedTime(latestWakeUp);
   }
 
   function renderLog() {
