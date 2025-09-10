@@ -55,7 +55,6 @@
       }
       li .activity-time {
         margin-left: auto;
-        /* ✅ Add a small margin to the right */
         margin-right: 10px; 
         text-align: right;
         flex-shrink: 0;
@@ -114,6 +113,11 @@
         <button class="sleep" id="sleep-btn">😴 Sleep</button>
         <button class="wake" id="wake-btn">🌞 Wake Up</button>
         <button class="manual-entry" id="manual-entry-btn">📋 Manual Entry</button>
+    </div>
+
+    <div class="timer-container">
+        <p>Time since last feed: <span id="lastFeedTime">N/A</span></p>
+        <p>Time since last wake up: <span id="lastWakeUpTime">N/A</span></p>
     </div>
 
     <ul id="activityLog"></ul>
