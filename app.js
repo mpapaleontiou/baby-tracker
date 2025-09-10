@@ -8,6 +8,8 @@ import {
   addDoc,
   query,
   orderBy,
+  limit,
+  where,
   onSnapshot,
   serverTimestamp,
   doc,
@@ -28,6 +30,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const manualEntryForm = document.getElementById('manualEntryForm');
     const closeModalBtn = document.getElementById('closeModalBtn');
 
+    // ✅ Get references to the new timer elements
+    const lastFeedTimeEl = document.getElementById('lastFeedTime');
+    const lastWakeUpTimeEl = document.getElementById('lastWakeUpTime');
+
     const activityIcons = {
         'Eat': '🍼',
         'Sleep': '😴',
@@ -36,7 +42,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     async function logActivity(type, manualTimestamp = null) {
       const now = new Date();
-      // ✅ Change: Only store the time, not the full date and time
       const displayTimestamp = manualTimestamp ? new Date(manualTimestamp).toLocaleTimeString() : now.toLocaleTimeString();
       const createdAt = manualTimestamp ? new Date(manualTimestamp) : serverTimestamp();
 
@@ -59,6 +64,49 @@ document.addEventListener('DOMContentLoaded', (event) => {
       } catch (e) {
         console.error("Error deleting document: ", e);
       }
+    }
+    
+    // ✅ New function to update the timers
+    async function updateTimers() {
+      // Query for the latest 'Eat' event
+      const eatQuery = query(
+        collection(db, "activities"),
+        where("type", "==", "Eat"),
+        orderBy("createdAt", "desc"),
+        limit(1)
+      );
+
+      // Query for the latest 'Wake Up' event
+      const wakeUpQuery = query(
+        collection(db, "activities"),
+        where("type", "==", "Wake Up"),
+        orderBy("createdAt", "desc"),
+        limit(1)
+      );
+
+      // Update last feed time
+      onSnapshot(eatQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const latestEat = snapshot.docs[0].data();
+          const latestEatTime = latestEat.createdAt.toDate();
+          const minutesElapsed = Math.floor((new Date() - latestEatTime) / (1000 * 60));
+          lastFeedTimeEl.textContent = `${minutesElapsed} minutes`;
+        } else {
+          lastFeedTimeEl.textContent = "N/A";
+        }
+      });
+
+      // Update last wake up time
+      onSnapshot(wakeUpQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const latestWakeUp = snapshot.docs[0].data();
+          const latestWakeUpTime = latestWakeUp.createdAt.toDate();
+          const minutesElapsed = Math.floor((new Date() - latestWakeUpTime) / (1000 * 60));
+          lastWakeUpTimeEl.textContent = `${minutesElapsed} minutes`;
+        } else {
+          lastWakeUpTimeEl.textContent = "N/A";
+        }
+      });
     }
 
     function renderLog() {
@@ -102,13 +150,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
           const icon = activityIcons[data.type] || '';
           
           const mainTextSpan = document.createElement("span");
-          // ✅ Change: Only display the icon and bolded type
           mainTextSpan.innerHTML = `${icon} <strong>${data.type}</strong>`;
           
           const timeSpan = document.createElement("span");
           timeSpan.className = 'activity-time';
-          // ✅ Change: Use toLocaleTimeString() to get only the time
-          timeSpan.textContent = data.createdAt.toDate().toLocaleTimeString();
+          timeSpan.textContent = data.timestamp;
           
           deleteBtn.innerHTML = `&times;`;
           deleteBtn.className = "delete-btn";
@@ -156,4 +202,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     wakeBtn.addEventListener('click', () => logActivity('Wake Up'));
 
     renderLog();
+    // ✅ Call the new function to update the timers on page load
+    updateTimers(); 
+    // ✅ Update the timers every minute
+    setInterval(updateTimers, 60000); 
 });
