@@ -65,7 +65,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
       }
     }
     
-    async function updateTimers() {
+    // ✅ This function now establishes the listeners.
+    function setupTimers() {
       // Query for the latest 'Eat' event
       const eatQuery = query(
         collection(db, "activities"),
@@ -82,7 +83,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         limit(1)
       );
 
-      // Update last feed time
+      // Listen for updates to the last feed time
       onSnapshot(eatQuery, (snapshot) => {
         if (!snapshot.empty) {
           const latestEat = snapshot.docs[0].data();
@@ -94,7 +95,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
       });
 
-      // Update last wake up time
+      // Listen for updates to the last wake up time
       onSnapshot(wakeUpQuery, (snapshot) => {
         if (!snapshot.empty) {
           const latestWakeUp = snapshot.docs[0].data();
@@ -200,6 +201,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     wakeBtn.addEventListener('click', () => logActivity('Wake Up'));
 
     renderLog();
-    updateTimers(); 
-    setInterval(updateTimers, 60000);
+    // ✅ Call this function once to set up the real-time listeners.
+    setupTimers();
 });
