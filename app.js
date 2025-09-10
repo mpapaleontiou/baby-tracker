@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const manualEntryForm = document.getElementById('manualEntryForm');
     const closeModalBtn = document.getElementById('closeModalBtn');
 
-    // ✅ Get references to the new timer elements
     const lastFeedTimeEl = document.getElementById('lastFeedTime');
     const lastWakeUpTimeEl = document.getElementById('lastWakeUpTime');
 
@@ -66,7 +65,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
       }
     }
     
-    // ✅ New function to update the timers
     async function updateTimers() {
       // Query for the latest 'Eat' event
       const eatQuery = query(
@@ -154,7 +152,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
           
           const timeSpan = document.createElement("span");
           timeSpan.className = 'activity-time';
-          timeSpan.textContent = data.timestamp;
+          timeSpan.textContent = data.createdAt.toDate().toLocaleTimeString();
           
           deleteBtn.innerHTML = `&times;`;
           deleteBtn.className = "delete-btn";
@@ -202,8 +200,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     wakeBtn.addEventListener('click', () => logActivity('Wake Up'));
 
     renderLog();
-    // ✅ Call the new function to update the timers on page load
     updateTimers(); 
-    // ✅ Update the timers every minute
-    setInterval(updateTimers, 60000); 
+    setInterval(updateTimers, 60000);
 });
