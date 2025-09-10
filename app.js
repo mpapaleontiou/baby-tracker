@@ -16,191 +16,206 @@ import {
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
-document.addEventListener('DOMContentLoaded', (event) => {
-    const db = getFirestore(app);
+document.addEventListener('DOMContentLoaded', () => {
+  const db = getFirestore(app);
 
-    const log = document.getElementById('activityLog');
+  const log = document.getElementById('activityLog');
 
-    const eatBtn = document.getElementById('eat-btn');
-    const sleepBtn = document.getElementById('sleep-btn');
-    const wakeBtn = document.getElementById('wake-btn');
+  const eatBtn = document.getElementById('eat-btn');
+  const sleepBtn = document.getElementById('sleep-btn');
+  const wakeBtn = document.getElementById('wake-btn');
 
-    const manualEntryBtn = document.getElementById('manual-entry-btn');
-    const manualEntryModal = document.getElementById('manualEntryModal');
-    const manualEntryForm = document.getElementById('manualEntryForm');
-    const closeModalBtn = document.getElementById('closeModalBtn');
+  const manualEntryBtn = document.getElementById('manual-entry-btn');
+  const manualEntryModal = document.getElementById('manualEntryModal');
+  const manualEntryForm = document.getElementById('manualEntryForm');
+  const closeModalBtn = document.getElementById('closeModalBtn');
 
-    const lastFeedTimeEl = document.getElementById('lastFeedTime');
-    const lastWakeUpTimeEl = document.getElementById('lastWakeUpTime');
+  const lastFeedTimeEl = document.getElementById('lastFeedTime');
+  const lastWakeUpTimeEl = document.getElementById('lastWakeUpTime');
 
-    const activityIcons = {
-        'Eat': '🍼',
-        'Sleep': '😴',
-        'Wake Up': '🌞'
-    };
+  const activityIcons = {
+    'Eat': '🍼',
+    'Sleep': '😴',
+    'Wake Up': '🌞'
+  };
 
-    async function logActivity(type, manualTimestamp = null) {
-      const now = new Date();
-      const displayTimestamp = manualTimestamp ? new Date(manualTimestamp).toLocaleTimeString() : now.toLocaleTimeString();
-      const createdAt = manualTimestamp ? new Date(manualTimestamp) : serverTimestamp();
+  // ✅ Always use serverTimestamp for consistency
+  async function logActivity(type, manualTimestamp = null) {
+    try {
+      const docData = {
+        type,
+        createdAt: serverTimestamp()
+      };
 
-      try {
-        await addDoc(collection(db, "activities"), {
-          type,
-          timestamp: displayTimestamp,
-          createdAt: createdAt
-        });
-        console.log("Activity logged successfully!");
-      } catch (e) {
-        console.error("Error adding document: ", e);
+      // If user picked a manual time, also store it in activityTime
+      if (manualTimestamp) {
+        docData.activityTime = new Date(manualTimestamp);
       }
+
+      await addDoc(collection(db, "activities"), docData);
+      console.log("Activity logged successfully!");
+    } catch (e) {
+      console.error("Error adding document: ", e);
     }
+  }
 
-    async function deleteActivity(docId) {
-      try {
-        await deleteDoc(doc(db, "activities", docId));
-        console.log("Activity deleted successfully!");
-      } catch (e) {
-        console.error("Error deleting document: ", e);
-      }
+  async function deleteActivity(docId) {
+    try {
+      await deleteDoc(doc(db, "activities", docId));
+      console.log("Activity deleted successfully!");
+    } catch (e) {
+      console.error("Error deleting document: ", e);
     }
-    
-    // ✅ This function now establishes the listeners.
-    function setupTimers() {
-      // Query for the latest 'Eat' event
-      const eatQuery = query(
-        collection(db, "activities"),
-        where("type", "==", "Eat"),
-        orderBy("createdAt", "desc"),
-        limit(1)
-      );
+  }
 
-      // Query for the latest 'Wake Up' event
-      const wakeUpQuery = query(
-        collection(db, "activities"),
-        where("type", "==", "Wake Up"),
-        orderBy("createdAt", "desc"),
-        limit(1)
-      );
+  async function updateTimers() {
+    // Query for the latest 'Eat' event
+    const eatQuery = query(
+      collection(db, "activities"),
+      where("type", "==", "Eat"),
+      orderBy("createdAt", "desc"),
+      limit(1)
+    );
 
-      // Listen for updates to the last feed time
-      onSnapshot(eatQuery, (snapshot) => {
-        if (!snapshot.empty) {
-          const latestEat = snapshot.docs[0].data();
+    // Query for the latest 'Wake Up' event
+    const wakeUpQuery = query(
+      collection(db, "activities"),
+      where("type", "==", "Wake Up"),
+      orderBy("createdAt", "desc"),
+      limit(1)
+    );
+
+    // Update last feed time
+    onSnapshot(eatQuery, (snapshot) => {
+      if (!snapshot.empty) {
+        const latestEat = snapshot.docs[0].data();
+        if (latestEat.createdAt) {
           const latestEatTime = latestEat.createdAt.toDate();
           const minutesElapsed = Math.floor((new Date() - latestEatTime) / (1000 * 60));
           lastFeedTimeEl.textContent = `${minutesElapsed} minutes`;
-        } else {
-          lastFeedTimeEl.textContent = "N/A";
         }
-      });
+      } else {
+        lastFeedTimeEl.textContent = "N/A";
+      }
+    });
 
-      // Listen for updates to the last wake up time
-      onSnapshot(wakeUpQuery, (snapshot) => {
-        if (!snapshot.empty) {
-          const latestWakeUp = snapshot.docs[0].data();
+    // Update last wake up time
+    onSnapshot(wakeUpQuery, (snapshot) => {
+      if (!snapshot.empty) {
+        const latestWakeUp = snapshot.docs[0].data();
+        if (latestWakeUp.createdAt) {
           const latestWakeUpTime = latestWakeUp.createdAt.toDate();
           const minutesElapsed = Math.floor((new Date() - latestWakeUpTime) / (1000 * 60));
           lastWakeUpTimeEl.textContent = `${minutesElapsed} minutes`;
-        } else {
-          lastWakeUpTimeEl.textContent = "N/A";
         }
-      });
-    }
+      } else {
+        lastWakeUpTimeEl.textContent = "N/A";
+      }
+    });
+  }
 
-    function renderLog() {
-      const activitiesQuery = query(
-        collection(db, "activities"),
-        orderBy("createdAt", "desc")
-      );
+  function renderLog() {
+    const activitiesQuery = query(
+      collection(db, "activities"),
+      orderBy("createdAt", "desc")
+    );
 
-      onSnapshot(activitiesQuery, (snapshot) => {
-        log.innerHTML = "";
-        let lastDate = null;
+    onSnapshot(activitiesQuery, (snapshot) => {
+      log.innerHTML = "";
+      let lastDate = null;
 
-        if (snapshot.empty) {
-          log.innerHTML = "<li>No activities logged yet.</li>";
-          return;
+      if (snapshot.empty) {
+        log.innerHTML = "<li>No activities logged yet.</li>";
+        return;
+      }
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+
+        // Prefer activityTime (if user entered manually), fallback to createdAt
+        let displayDate = null;
+        if (data.activityTime) {
+          displayDate = data.activityTime.toDate ? data.activityTime.toDate() : new Date(data.activityTime);
+        } else if (data.createdAt) {
+          displayDate = data.createdAt.toDate();
         }
 
-        snapshot.forEach((doc) => {
-          const data = doc.data();
+        if (!displayDate) return; // Skip if no timestamp
 
-          if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-            const entryDate = data.createdAt.toDate();
-            const formattedDate = entryDate.toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            });
-
-            if (formattedDate !== lastDate) {
-              const dateHeading = document.createElement("h3");
-              dateHeading.textContent = formattedDate;
-              log.appendChild(dateHeading);
-              lastDate = formattedDate;
-            }
-          }
-
-          const li = document.createElement("li");
-          const deleteBtn = document.createElement("button");
-          
-          const icon = activityIcons[data.type] || '';
-          
-          const mainTextSpan = document.createElement("span");
-          mainTextSpan.innerHTML = `${icon} <strong>${data.type}</strong>`;
-          
-          const timeSpan = document.createElement("span");
-          timeSpan.className = 'activity-time';
-          timeSpan.textContent = data.createdAt.toDate().toLocaleTimeString();
-          
-          deleteBtn.innerHTML = `&times;`;
-          deleteBtn.className = "delete-btn";
-
-          deleteBtn.addEventListener('click', () => {
-            deleteActivity(doc.id);
-          });
-          
-          li.appendChild(mainTextSpan);
-          li.appendChild(timeSpan);
-          li.appendChild(deleteBtn);
-          log.appendChild(li);
+        const formattedDate = displayDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
         });
-      }, (error) => {
-        console.error("Error loading logs:", error);
-        log.innerHTML = "<li>Error loading logs. Check Firestore rules.</li>";
+
+        if (formattedDate !== lastDate) {
+          const dateHeading = document.createElement("h3");
+          dateHeading.textContent = formattedDate;
+          log.appendChild(dateHeading);
+          lastDate = formattedDate;
+        }
+
+        const li = document.createElement("li");
+        const deleteBtn = document.createElement("button");
+
+        const icon = activityIcons[data.type] || '';
+
+        const mainTextSpan = document.createElement("span");
+        mainTextSpan.innerHTML = `${icon} <strong>${data.type}</strong>`;
+
+        const timeSpan = document.createElement("span");
+        timeSpan.className = 'activity-time';
+        timeSpan.textContent = displayDate.toLocaleTimeString();
+
+        deleteBtn.innerHTML = `&times;`;
+        deleteBtn.className = "delete-btn";
+
+        deleteBtn.addEventListener('click', () => {
+          deleteActivity(docSnap.id);
+        });
+
+        li.appendChild(mainTextSpan);
+        li.appendChild(timeSpan);
+        li.appendChild(deleteBtn);
+        log.appendChild(li);
       });
-    }
-
-    manualEntryBtn.addEventListener('click', () => {
-      manualEntryModal.style.display = 'flex';
+    }, (error) => {
+      console.error("Error loading logs:", error);
+      log.innerHTML = "<li>Error loading logs. Check Firestore rules.</li>";
     });
+  }
 
-    closeModalBtn.addEventListener('click', () => {
-      manualEntryModal.style.display = 'none';
-    });
+  // --- Event listeners ---
+  manualEntryBtn.addEventListener('click', () => {
+    manualEntryModal.style.display = 'flex';
+  });
 
-    manualEntryForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const activityType = document.getElementById('activityType').value;
-      const activityDate = document.getElementById('activityDate').value;
-      const activityTime = document.getElementById('activityTime').value;
+  closeModalBtn.addEventListener('click', () => {
+    manualEntryModal.style.display = 'none';
+  });
 
-      const combinedTimestamp = `${activityDate}T${activityTime}:00`;
+  manualEntryForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-      await logActivity(activityType, combinedTimestamp);
+    const activityType = document.getElementById('activityType').value;
+    const activityDate = document.getElementById('activityDate').value;
+    const activityTime = document.getElementById('activityTime').value;
 
-      manualEntryModal.style.display = 'none';
-      manualEntryForm.reset();
-    });
+    const combinedTimestamp = `${activityDate}T${activityTime}:00`;
 
-    eatBtn.addEventListener('click', () => logActivity('Eat'));
-    sleepBtn.addEventListener('click', () => logActivity('Sleep'));
-    wakeBtn.addEventListener('click', () => logActivity('Wake Up'));
+    await logActivity(activityType, combinedTimestamp);
 
-    renderLog();
-    // ✅ Call this function once to set up the real-time listeners.
-    setupTimers();
+    manualEntryModal.style.display = 'none';
+    manualEntryForm.reset();
+  });
+
+  eatBtn.addEventListener('click', () => logActivity('Eat'));
+  sleepBtn.addEventListener('click', () => logActivity('Sleep'));
+  wakeBtn.addEventListener('click', () => logActivity('Wake Up'));
+
+  // --- Init ---
+  renderLog();
+  updateTimers();
+  setInterval(updateTimers, 60000);
 });
