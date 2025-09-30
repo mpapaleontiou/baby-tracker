@@ -27,14 +27,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const manualEntryModal = document.getElementById("manualEntryModal");
   const manualEntryForm = document.getElementById("manualEntryForm");
   const closeModalBtn = document.getElementById("closeModalBtn");
+  const cancelBtn = document.getElementById("cancelBtn");
 
   const lastFeedTimeEl = document.getElementById("lastFeedTime");
   const lastWakeUpTimeEl = document.getElementById("lastWakeUpTime");
 
-  const activityIcons = {
-    "Eat": "🍼",
-    "Sleep": "😴",
-    "Wake Up": "🌞",
+  const activityConfig = {
+    "Eat": { icon: "milk", label: "Feed" },
+    "Sleep": { icon: "moon", label: "Sleep" },
+    "Wake Up": { icon: "sun", label: "Wake" }
   };
 
   async function logActivity(type, manualTimestamp = null) {
@@ -70,14 +71,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const now = new Date();
 
     function formatElapsedTime(date) {
-      if (!date) return "N/A";
+      if (!date) return "—";
       const totalMinutes = Math.floor((now - date) / (1000 * 60));
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
+      
+      if (hours === 0 && minutes === 0) return "Just now";
+      
       let result = "";
-      if (hours > 0) result += `${hours} hour${hours > 1 ? "s" : ""} `;
-      result += `${minutes} minute${minutes !== 1 ? "s" : ""}`;
-      return result;
+      if (hours > 0) result += `${hours}h `;
+      if (minutes > 0 || hours === 0) result += `${minutes}m`;
+      return result.trim();
     }
 
     lastFeedTimeEl.textContent = formatElapsedTime(latestEat);
@@ -100,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let latestWakeUp = null;
 
         if (snapshot.empty) {
-          log.innerHTML = "<li>No activities logged yet.</li>";
+          log.innerHTML = '<div class="empty-state">No activities logged yet</div>';
           return;
         }
 
@@ -122,7 +126,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (formattedDate !== lastDate) {
-              const dateHeading = document.createElement("h3");
+              const dateHeading = document.createElement("div");
+              dateHeading.className = "date-divider";
               dateHeading.textContent = formattedDate;
               log.appendChild(dateHeading);
               lastDate = formattedDate;
@@ -137,17 +142,26 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           }
 
-          const li = document.createElement("li");
-          const deleteBtn = document.createElement("button");
+          const activityItem = document.createElement("div");
+          activityItem.className = "activity-item";
 
-          const icon = activityIcons[data.type] || "";
+          const config = activityConfig[data.type] || { icon: "circle", label: data.type };
 
-          const mainTextSpan = document.createElement("span");
-          let mainText = `${icon} <strong>${data.type}</strong>`;
+          // Icon
+          const iconEl = document.createElement("i");
+          iconEl.setAttribute("data-lucide", config.icon);
+          iconEl.className = "activity-icon";
+
+          // Content
+          const contentEl = document.createElement("div");
+          contentEl.className = "activity-content";
+
+          const typeEl = document.createElement("span");
+          typeEl.className = "activity-type";
+          typeEl.textContent = config.label;
 
           // Calculate sleep duration if this is a Sleep event followed by Wake Up
           if (data.type === "Sleep") {
-            // Get all activities as array
             const allActivities = [];
             snapshot.forEach((d) => {
               const actData = d.data();
@@ -158,47 +172,65 @@ document.addEventListener("DOMContentLoaded", () => {
               allActivities.push({ id: d.id, ...actData, parsedDate: actDate });
             });
 
-            // Sort by createdAt ascending (oldest first)
             allActivities.sort((a, b) => {
               if (!a.parsedDate || !b.parsedDate) return 0;
               return a.parsedDate - b.parsedDate;
             });
 
-            // Find this sleep event and check if next event is Wake Up
             const currentIndex = allActivities.findIndex(a => a.id === doc.id);
             if (currentIndex !== -1 && currentIndex < allActivities.length - 1) {
               const nextActivity = allActivities[currentIndex + 1];
               if (nextActivity.type === "Wake Up" && entryDate && nextActivity.parsedDate) {
                 const durationMinutes = Math.round((nextActivity.parsedDate - entryDate) / (1000 * 60));
-                mainText += ` <span style="color: #999; font-size: 0.9em;">(${durationMinutes} min)</span>`;
+                const durationEl = document.createElement("span");
+                durationEl.className = "activity-duration";
+                durationEl.textContent = `${durationMinutes}m`;
+                contentEl.appendChild(typeEl);
+                contentEl.appendChild(durationEl);
+              } else {
+                contentEl.appendChild(typeEl);
               }
+            } else {
+              contentEl.appendChild(typeEl);
             }
-          }
-
-          mainTextSpan.innerHTML = mainText;
-
-          const timeSpan = document.createElement("span");
-          timeSpan.className = "activity-time";
-          if (entryDate) {
-            timeSpan.textContent = entryDate.toLocaleTimeString();
           } else {
-            timeSpan.textContent = data.timestamp || "Unknown time";
+            contentEl.appendChild(typeEl);
           }
 
-          deleteBtn.innerHTML = `&times;`;
-          deleteBtn.className = "delete-btn";
+          // Time
+          const timeEl = document.createElement("span");
+          timeEl.className = "activity-time";
+          if (entryDate) {
+            timeEl.textContent = entryDate.toLocaleTimeString([], { 
+              hour: 'numeric', 
+              minute: '2-digit',
+              hour12: true 
+            });
+          } else {
+            timeEl.textContent = data.timestamp || "Unknown";
+          }
 
+          // Delete button
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "activity-delete";
+          deleteBtn.innerHTML = '<i data-lucide="x"></i>';
           deleteBtn.addEventListener("click", () => {
             deleteActivity(doc.id);
           });
 
-          li.appendChild(mainTextSpan);
-          li.appendChild(timeSpan);
-          li.appendChild(deleteBtn);
-          log.appendChild(li);
+          activityItem.appendChild(iconEl);
+          activityItem.appendChild(contentEl);
+          activityItem.appendChild(timeEl);
+          activityItem.appendChild(deleteBtn);
+          log.appendChild(activityItem);
         });
 
-        // Immediately update elapsed time
+        // Reinitialize Lucide icons for dynamically added elements
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+
+        // Update elapsed time
         updateElapsedTime(latestEat, latestWakeUp);
 
         // Keep updating every minute
@@ -206,18 +238,30 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       (error) => {
         console.error("Error loading logs:", error);
-        log.innerHTML = "<li>Error loading logs. Check Firestore rules.</li>";
+        log.innerHTML = '<div class="empty-state">Error loading activities</div>';
       }
     );
   }
 
-  // Manual entry modal controls
-  manualEntryBtn.addEventListener("click", () => {
-    manualEntryModal.style.display = "flex";
-  });
+  // Modal controls
+  function openModal() {
+    manualEntryModal.classList.add("active");
+  }
 
-  closeModalBtn.addEventListener("click", () => {
-    manualEntryModal.style.display = "none";
+  function closeModal() {
+    manualEntryModal.classList.remove("active");
+    manualEntryForm.reset();
+  }
+
+  manualEntryBtn.addEventListener("click", openModal);
+  closeModalBtn.addEventListener("click", closeModal);
+  cancelBtn.addEventListener("click", closeModal);
+
+  // Close modal when clicking overlay
+  manualEntryModal.addEventListener("click", (e) => {
+    if (e.target === manualEntryModal) {
+      closeModal();
+    }
   });
 
   manualEntryForm.addEventListener("submit", async (e) => {
@@ -231,8 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     await logActivity(activityType, combinedTimestamp);
 
-    manualEntryModal.style.display = "none";
-    manualEntryForm.reset();
+    closeModal();
   });
 
   eatBtn.addEventListener("click", () => logActivity("Eat"));
