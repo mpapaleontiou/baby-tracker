@@ -143,7 +143,39 @@ document.addEventListener("DOMContentLoaded", () => {
           const icon = activityIcons[data.type] || "";
 
           const mainTextSpan = document.createElement("span");
-          mainTextSpan.innerHTML = `${icon} <strong>${data.type}</strong>`;
+          let mainText = `${icon} <strong>${data.type}</strong>`;
+
+          // Calculate sleep duration if this is a Sleep event followed by Wake Up
+          if (data.type === "Sleep") {
+            // Get all activities as array
+            const allActivities = [];
+            snapshot.forEach((d) => {
+              const actData = d.data();
+              let actDate = null;
+              if (actData.createdAt && typeof actData.createdAt.toDate === "function") {
+                actDate = actData.createdAt.toDate();
+              }
+              allActivities.push({ id: d.id, ...actData, parsedDate: actDate });
+            });
+
+            // Sort by createdAt ascending (oldest first)
+            allActivities.sort((a, b) => {
+              if (!a.parsedDate || !b.parsedDate) return 0;
+              return a.parsedDate - b.parsedDate;
+            });
+
+            // Find this sleep event and check if next event is Wake Up
+            const currentIndex = allActivities.findIndex(a => a.id === doc.id);
+            if (currentIndex !== -1 && currentIndex < allActivities.length - 1) {
+              const nextActivity = allActivities[currentIndex + 1];
+              if (nextActivity.type === "Wake Up" && entryDate && nextActivity.parsedDate) {
+                const durationMinutes = Math.round((nextActivity.parsedDate - entryDate) / (1000 * 60));
+                mainText += ` <span style="color: #999; font-size: 0.9em;">(${durationMinutes} min)</span>`;
+              }
+            }
+          }
+
+          mainTextSpan.innerHTML = mainText;
 
           const timeSpan = document.createElement("span");
           timeSpan.className = "activity-time";
