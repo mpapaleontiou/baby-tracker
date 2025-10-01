@@ -76,16 +76,28 @@ document.addEventListener("DOMContentLoaded", () => {
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
       
-      if (hours === 0 && minutes === 0) return "Just now";
+      if (totalMinutes < 1) return "Just now";
+      if (hours === 0) return `${minutes}m`;
       
-      let result = "";
-      if (hours > 0) result += `${hours}h `;
-      if (minutes > 0 || hours === 0) result += `${minutes}m`;
-      return result.trim();
+      let result = `${hours}h`;
+      if (minutes > 0) result += ` ${minutes}m`;
+      return result;
     }
 
     lastFeedTimeEl.textContent = formatElapsedTime(latestEat);
     lastWakeUpTimeEl.textContent = formatElapsedTime(latestWakeUp);
+  }
+
+  function formatDuration(minutes) {
+    if (minutes < 60) {
+      return `${minutes}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h${mins}m`;
   }
 
   function renderLog() {
@@ -184,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const durationMinutes = Math.round((nextActivity.parsedDate - entryDate) / (1000 * 60));
                 const durationEl = document.createElement("span");
                 durationEl.className = "activity-duration";
-                durationEl.textContent = `${durationMinutes}m`;
+                durationEl.textContent = formatDuration(durationMinutes);
                 contentEl.appendChild(typeEl);
                 contentEl.appendChild(durationEl);
               } else {
