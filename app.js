@@ -67,59 +67,6 @@ const parseCreatedAt = (data) => {
     : null;
 };
 
-// Create activity item element
-const createActivityElement = (doc, allActivitiesSorted) => {
-  const data = doc.data();
-  const entryDate = parseCreatedAt(data);
-  const config = ACTIVITY_CONFIG[data.type] || { icon: "circle", label: data.type };
-  
-  const activityItem = document.createElement("div");
-  activityItem.className = "activity-item";
-  
-  // Icon
-  const iconEl = document.createElement("i");
-  iconEl.setAttribute("data-lucide", config.icon);
-  iconEl.className = "activity-icon";
-  
-  // Content (type + optional duration)
-  const contentEl = document.createElement("div");
-  contentEl.className = "activity-content";
-  
-  const typeEl = document.createElement("span");
-  typeEl.className = "activity-type";
-  typeEl.textContent = config.label;
-  contentEl.appendChild(typeEl);
-  
-  // Add sleep duration if applicable
-  if (data.type === "Sleep" && entryDate) {
-    const currentIndex = allActivitiesSorted.findIndex(a => a.id === doc.id);
-    const nextActivity = allActivitiesSorted[currentIndex + 1];
-    
-    if (nextActivity?.type === "Wake Up" && nextActivity.parsedDate) {
-      const durationMinutes = Math.round((nextActivity.parsedDate - entryDate) / 60000);
-      const durationEl = document.createElement("span");
-      durationEl.className = "activity-duration";
-      durationEl.textContent = formatDuration(durationMinutes);
-      contentEl.appendChild(durationEl);
-    }
-  }
-  
-  // Time
-  const timeEl = document.createElement("span");
-  timeEl.className = "activity-time";
-  timeEl.textContent = entryDate ? formatTime(entryDate) : (data.timestamp || "Unknown");
-  
-  // Delete button
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "activity-delete";
-  deleteBtn.innerHTML = '<i data-lucide="x"></i>';
-  deleteBtn.addEventListener("click", () => deleteActivity(doc.id));
-  
-  activityItem.append(iconEl, contentEl, timeEl, deleteBtn);
-  
-  return { element: activityItem, date: entryDate, formattedDate: entryDate ? formatDate(entryDate) : null };
-};
-
 // Main App
 document.addEventListener("DOMContentLoaded", () => {
   const db = getFirestore(app);
@@ -163,6 +110,59 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (e) {
       console.error("Error deleting document:", e);
     }
+  };
+  
+  // Create activity item element
+  const createActivityElement = (doc, allActivitiesSorted) => {
+    const data = doc.data();
+    const entryDate = parseCreatedAt(data);
+    const config = ACTIVITY_CONFIG[data.type] || { icon: "circle", label: data.type };
+    
+    const activityItem = document.createElement("div");
+    activityItem.className = "activity-item";
+    
+    // Icon
+    const iconEl = document.createElement("i");
+    iconEl.setAttribute("data-lucide", config.icon);
+    iconEl.className = "activity-icon";
+    
+    // Content (type + optional duration)
+    const contentEl = document.createElement("div");
+    contentEl.className = "activity-content";
+    
+    const typeEl = document.createElement("span");
+    typeEl.className = "activity-type";
+    typeEl.textContent = config.label;
+    contentEl.appendChild(typeEl);
+    
+    // Add sleep duration if applicable
+    if (data.type === "Sleep" && entryDate) {
+      const currentIndex = allActivitiesSorted.findIndex(a => a.id === doc.id);
+      const nextActivity = allActivitiesSorted[currentIndex + 1];
+      
+      if (nextActivity?.type === "Wake Up" && nextActivity.parsedDate) {
+        const durationMinutes = Math.round((nextActivity.parsedDate - entryDate) / 60000);
+        const durationEl = document.createElement("span");
+        durationEl.className = "activity-duration";
+        durationEl.textContent = formatDuration(durationMinutes);
+        contentEl.appendChild(durationEl);
+      }
+    }
+    
+    // Time
+    const timeEl = document.createElement("span");
+    timeEl.className = "activity-time";
+    timeEl.textContent = entryDate ? formatTime(entryDate) : (data.timestamp || "Unknown");
+    
+    // Delete button
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "activity-delete";
+    deleteBtn.innerHTML = '<i data-lucide="x"></i>';
+    deleteBtn.addEventListener("click", () => deleteActivity(doc.id));
+    
+    activityItem.append(iconEl, contentEl, timeEl, deleteBtn);
+    
+    return { element: activityItem, date: entryDate, formattedDate: entryDate ? formatDate(entryDate) : null };
   };
   
   // Render activity log
