@@ -14,285 +14,273 @@ import {
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
+// Activity configuration
+const ACTIVITY_CONFIG = {
+  "Eat": { icon: "milk", label: "Feed" },
+  "Sleep": { icon: "moon", label: "Sleep" },
+  "Wake Up": { icon: "sun", label: "Wake" }
+};
+
+// Utility Functions
+const formatElapsedTime = (date) => {
+  if (!date) return "—";
+  
+  const totalMinutes = Math.floor((Date.now() - date) / 60000);
+  if (totalMinutes < 1) return "Just now";
+  
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  if (hours === 0) return `${minutes}m`;
+  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+};
+
+const formatDuration = (minutes) => {
+  if (minutes < 60) return `${minutes}m`;
+  
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  
+  return mins === 0 ? `${hours}h` : `${hours}h${mins}m`;
+};
+
+const formatTime = (date) => {
+  return date.toLocaleTimeString([], { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  });
+};
+
+const formatDate = (date) => {
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+const parseCreatedAt = (data) => {
+  return data.createdAt && typeof data.createdAt.toDate === "function"
+    ? data.createdAt.toDate()
+    : null;
+};
+
+// Create activity item element
+const createActivityElement = (doc, allActivitiesSorted) => {
+  const data = doc.data();
+  const entryDate = parseCreatedAt(data);
+  const config = ACTIVITY_CONFIG[data.type] || { icon: "circle", label: data.type };
+  
+  const activityItem = document.createElement("div");
+  activityItem.className = "activity-item";
+  
+  // Icon
+  const iconEl = document.createElement("i");
+  iconEl.setAttribute("data-lucide", config.icon);
+  iconEl.className = "activity-icon";
+  
+  // Content (type + optional duration)
+  const contentEl = document.createElement("div");
+  contentEl.className = "activity-content";
+  
+  const typeEl = document.createElement("span");
+  typeEl.className = "activity-type";
+  typeEl.textContent = config.label;
+  contentEl.appendChild(typeEl);
+  
+  // Add sleep duration if applicable
+  if (data.type === "Sleep" && entryDate) {
+    const currentIndex = allActivitiesSorted.findIndex(a => a.id === doc.id);
+    const nextActivity = allActivitiesSorted[currentIndex + 1];
+    
+    if (nextActivity?.type === "Wake Up" && nextActivity.parsedDate) {
+      const durationMinutes = Math.round((nextActivity.parsedDate - entryDate) / 60000);
+      const durationEl = document.createElement("span");
+      durationEl.className = "activity-duration";
+      durationEl.textContent = formatDuration(durationMinutes);
+      contentEl.appendChild(durationEl);
+    }
+  }
+  
+  // Time
+  const timeEl = document.createElement("span");
+  timeEl.className = "activity-time";
+  timeEl.textContent = entryDate ? formatTime(entryDate) : (data.timestamp || "Unknown");
+  
+  // Delete button
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "activity-delete";
+  deleteBtn.innerHTML = '<i data-lucide="x"></i>';
+  deleteBtn.addEventListener("click", () => deleteActivity(doc.id));
+  
+  activityItem.append(iconEl, contentEl, timeEl, deleteBtn);
+  
+  return { element: activityItem, date: entryDate, formattedDate: entryDate ? formatDate(entryDate) : null };
+};
+
+// Main App
 document.addEventListener("DOMContentLoaded", () => {
   const db = getFirestore(app);
-
+  
+  // DOM Elements
   const log = document.getElementById("activityLog");
-
-  const eatBtn = document.getElementById("eat-btn");
-  const sleepBtn = document.getElementById("sleep-btn");
-  const wakeBtn = document.getElementById("wake-btn");
-
-  const manualEntryBtn = document.getElementById("manual-entry-btn");
-  const manualEntryModal = document.getElementById("manualEntryModal");
-  const manualEntryForm = document.getElementById("manualEntryForm");
-  const closeModalBtn = document.getElementById("closeModalBtn");
-  const cancelBtn = document.getElementById("cancelBtn");
-
   const lastFeedTimeEl = document.getElementById("lastFeedTime");
   const lastWakeUpTimeEl = document.getElementById("lastWakeUpTime");
-
-  const activityConfig = {
-    "Eat": { icon: "milk", label: "Feed" },
-    "Sleep": { icon: "moon", label: "Sleep" },
-    "Wake Up": { icon: "sun", label: "Wake" }
+  const manualEntryModal = document.getElementById("manualEntryModal");
+  const manualEntryForm = document.getElementById("manualEntryForm");
+  
+  // State
+  let elapsedTimeInterval = null;
+  let latestEat = null;
+  let latestWakeUp = null;
+  
+  // Update elapsed time displays
+  const updateElapsedTime = () => {
+    lastFeedTimeEl.textContent = formatElapsedTime(latestEat);
+    lastWakeUpTimeEl.textContent = formatElapsedTime(latestWakeUp);
   };
-
-  async function logActivity(type, manualTimestamp = null) {
-    const now = new Date();
-    const displayTimestamp = manualTimestamp
-      ? new Date(manualTimestamp).toLocaleTimeString()
-      : now.toLocaleTimeString();
-
+  
+  // Database operations
+  const logActivity = async (type, manualTimestamp = null) => {
     const createdAt = manualTimestamp ? new Date(manualTimestamp) : serverTimestamp();
-
+    
     try {
       await addDoc(collection(db, "activities"), {
         type,
-        timestamp: displayTimestamp,
+        timestamp: manualTimestamp ? new Date(manualTimestamp).toLocaleTimeString() : new Date().toLocaleTimeString(),
         createdAt,
       });
-      console.log("Activity logged successfully!");
     } catch (e) {
-      console.error("Error adding document: ", e);
+      console.error("Error adding document:", e);
     }
-  }
-
-  async function deleteActivity(docId) {
+  };
+  
+  const deleteActivity = async (docId) => {
     try {
       await deleteDoc(doc(db, "activities", docId));
-      console.log("Activity deleted successfully!");
     } catch (e) {
-      console.error("Error deleting document: ", e);
+      console.error("Error deleting document:", e);
     }
-  }
-
-  function updateElapsedTime(latestEat, latestWakeUp) {
-    const now = new Date();
-
-    function formatElapsedTime(date) {
-      if (!date) return "—";
-      const totalMinutes = Math.floor((now - date) / (1000 * 60));
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-      
-      if (totalMinutes < 1) return "Just now";
-      if (hours === 0) return `${minutes}m`;
-      
-      let result = `${hours}h`;
-      if (minutes > 0) result += ` ${minutes}m`;
-      return result;
-    }
-
-    lastFeedTimeEl.textContent = formatElapsedTime(latestEat);
-    lastWakeUpTimeEl.textContent = formatElapsedTime(latestWakeUp);
-  }
-
-  function formatDuration(minutes) {
-    if (minutes < 60) {
-      return `${minutes}m`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (mins === 0) {
-      return `${hours}h`;
-    }
-    return `${hours}h${mins}m`;
-  }
-
-  function renderLog() {
+  };
+  
+  // Render activity log
+  const renderLog = () => {
     const activitiesQuery = query(
       collection(db, "activities"),
       orderBy("createdAt", "desc")
     );
-
+    
     onSnapshot(
       activitiesQuery,
       (snapshot) => {
         log.innerHTML = "";
-        let lastDate = null;
-
-        let latestEat = null;
-        let latestWakeUp = null;
-
+        
         if (snapshot.empty) {
           log.innerHTML = '<div class="empty-state">No activities logged yet</div>';
           return;
         }
-
+        
+        // Build sorted activities array once
+        const allActivities = [];
         snapshot.forEach((doc) => {
           const data = doc.data();
-
-          // Resolve timestamp
-          let entryDate = null;
-          if (data.createdAt && typeof data.createdAt.toDate === "function") {
-            entryDate = data.createdAt.toDate();
-          }
-
-          if (entryDate) {
-            const formattedDate = entryDate.toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            });
-
-            if (formattedDate !== lastDate) {
-              const dateHeading = document.createElement("div");
-              dateHeading.className = "date-divider";
-              dateHeading.textContent = formattedDate;
-              log.appendChild(dateHeading);
-              lastDate = formattedDate;
-            }
-
-            // Track latest Eat and Wake Up
-            if (data.type === "Eat" && !latestEat) {
-              latestEat = entryDate;
-            }
-            if (data.type === "Wake Up" && !latestWakeUp) {
-              latestWakeUp = entryDate;
-            }
-          }
-
-          const activityItem = document.createElement("div");
-          activityItem.className = "activity-item";
-
-          const config = activityConfig[data.type] || { icon: "circle", label: data.type };
-
-          // Icon
-          const iconEl = document.createElement("i");
-          iconEl.setAttribute("data-lucide", config.icon);
-          iconEl.className = "activity-icon";
-
-          // Content
-          const contentEl = document.createElement("div");
-          contentEl.className = "activity-content";
-
-          const typeEl = document.createElement("span");
-          typeEl.className = "activity-type";
-          typeEl.textContent = config.label;
-
-          // Calculate sleep duration if this is a Sleep event followed by Wake Up
-          if (data.type === "Sleep") {
-            const allActivities = [];
-            snapshot.forEach((d) => {
-              const actData = d.data();
-              let actDate = null;
-              if (actData.createdAt && typeof actData.createdAt.toDate === "function") {
-                actDate = actData.createdAt.toDate();
-              }
-              allActivities.push({ id: d.id, ...actData, parsedDate: actDate });
-            });
-
-            allActivities.sort((a, b) => {
-              if (!a.parsedDate || !b.parsedDate) return 0;
-              return a.parsedDate - b.parsedDate;
-            });
-
-            const currentIndex = allActivities.findIndex(a => a.id === doc.id);
-            if (currentIndex !== -1 && currentIndex < allActivities.length - 1) {
-              const nextActivity = allActivities[currentIndex + 1];
-              if (nextActivity.type === "Wake Up" && entryDate && nextActivity.parsedDate) {
-                const durationMinutes = Math.round((nextActivity.parsedDate - entryDate) / (1000 * 60));
-                const durationEl = document.createElement("span");
-                durationEl.className = "activity-duration";
-                durationEl.textContent = formatDuration(durationMinutes);
-                contentEl.appendChild(typeEl);
-                contentEl.appendChild(durationEl);
-              } else {
-                contentEl.appendChild(typeEl);
-              }
-            } else {
-              contentEl.appendChild(typeEl);
-            }
-          } else {
-            contentEl.appendChild(typeEl);
-          }
-
-          // Time
-          const timeEl = document.createElement("span");
-          timeEl.className = "activity-time";
-          if (entryDate) {
-            timeEl.textContent = entryDate.toLocaleTimeString([], { 
-              hour: 'numeric', 
-              minute: '2-digit',
-              hour12: true 
-            });
-          } else {
-            timeEl.textContent = data.timestamp || "Unknown";
-          }
-
-          // Delete button
-          const deleteBtn = document.createElement("button");
-          deleteBtn.className = "activity-delete";
-          deleteBtn.innerHTML = '<i data-lucide="x"></i>';
-          deleteBtn.addEventListener("click", () => {
-            deleteActivity(doc.id);
-          });
-
-          activityItem.appendChild(iconEl);
-          activityItem.appendChild(contentEl);
-          activityItem.appendChild(timeEl);
-          activityItem.appendChild(deleteBtn);
-          log.appendChild(activityItem);
+          const parsedDate = parseCreatedAt(data);
+          allActivities.push({ id: doc.id, ...data, parsedDate });
         });
-
-        // Reinitialize Lucide icons for dynamically added elements
+        
+        // Sort chronologically (oldest first) for duration calculation
+        const allActivitiesSorted = [...allActivities].sort((a, b) => {
+          if (!a.parsedDate || !b.parsedDate) return 0;
+          return a.parsedDate - b.parsedDate;
+        });
+        
+        // Track latest activities
+        latestEat = null;
+        latestWakeUp = null;
+        
+        // Render activities (in reverse chrono order from snapshot)
+        let lastDateHeader = null;
+        
+        snapshot.forEach((doc) => {
+          const { element, date, formattedDate } = createActivityElement(doc, allActivitiesSorted);
+          
+          // Add date divider if needed
+          if (formattedDate && formattedDate !== lastDateHeader) {
+            const dateHeading = document.createElement("div");
+            dateHeading.className = "date-divider";
+            dateHeading.textContent = formattedDate;
+            log.appendChild(dateHeading);
+            lastDateHeader = formattedDate;
+          }
+          
+          // Track latest Eat and Wake Up
+          const data = doc.data();
+          if (date) {
+            if (data.type === "Eat" && !latestEat) latestEat = date;
+            if (data.type === "Wake Up" && !latestWakeUp) latestWakeUp = date;
+          }
+          
+          log.appendChild(element);
+        });
+        
+        // Reinitialize Lucide icons
         if (typeof lucide !== 'undefined') {
           lucide.createIcons();
         }
-
-        // Update elapsed time
-        updateElapsedTime(latestEat, latestWakeUp);
-
-        // Keep updating every minute
-        setInterval(() => updateElapsedTime(latestEat, latestWakeUp), 60000);
+        
+        // Update elapsed time immediately
+        updateElapsedTime();
+        
+        // Clear existing interval and create new one
+        if (elapsedTimeInterval) {
+          clearInterval(elapsedTimeInterval);
+        }
+        elapsedTimeInterval = setInterval(updateElapsedTime, 60000);
       },
       (error) => {
         console.error("Error loading logs:", error);
         log.innerHTML = '<div class="empty-state">Error loading activities</div>';
       }
     );
-  }
-
+  };
+  
   // Modal controls
-  function openModal() {
-    manualEntryModal.classList.add("active");
-  }
-
-  function closeModal() {
+  const openModal = () => manualEntryModal.classList.add("active");
+  const closeModal = () => {
     manualEntryModal.classList.remove("active");
     manualEntryForm.reset();
-  }
-
-  manualEntryBtn.addEventListener("click", openModal);
-  closeModalBtn.addEventListener("click", closeModal);
-  cancelBtn.addEventListener("click", closeModal);
-
-  // Close modal when clicking overlay
+  };
+  
+  // Event listeners
+  document.getElementById("eat-btn").addEventListener("click", () => logActivity("Eat"));
+  document.getElementById("sleep-btn").addEventListener("click", () => logActivity("Sleep"));
+  document.getElementById("wake-btn").addEventListener("click", () => logActivity("Wake Up"));
+  document.getElementById("manual-entry-btn").addEventListener("click", openModal);
+  document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+  document.getElementById("cancelBtn").addEventListener("click", closeModal);
+  
   manualEntryModal.addEventListener("click", (e) => {
-    if (e.target === manualEntryModal) {
-      closeModal();
-    }
+    if (e.target === manualEntryModal) closeModal();
   });
-
+  
   manualEntryForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-
+    
     const activityType = document.getElementById("activityType").value;
     const activityDate = document.getElementById("activityDate").value;
     const activityTime = document.getElementById("activityTime").value;
-
     const combinedTimestamp = `${activityDate}T${activityTime}:00`;
-
+    
     await logActivity(activityType, combinedTimestamp);
-
     closeModal();
   });
-
-  eatBtn.addEventListener("click", () => logActivity("Eat"));
-  sleepBtn.addEventListener("click", () => logActivity("Sleep"));
-  wakeBtn.addEventListener("click", () => logActivity("Wake Up"));
-
+  
+  // Initialize Lucide icons and start rendering
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+  
   renderLog();
 });
